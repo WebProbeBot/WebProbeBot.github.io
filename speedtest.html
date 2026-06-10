@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CDN Speed Test · WebProbeBot</title>
+  <meta name="description" content="Benchmark GitHub repository static asset latency across jsDelivr, Statically, raw.githack, China mirrors and raw proxies." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: radial-gradient(ellipse at top, #1a1f3a 0%, #0d1117 60%);
+      background-attachment: fixed;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* header */
+    header { margin-bottom: 2rem; }
+    .top-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .back {
+      color: #8b949e; text-decoration: none; font-size: 0.9rem;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .back:hover { color: #58a6ff; }
+    .doc-link {
+      color: #8b949e; text-decoration: none; font-size: 0.85rem;
+      padding: 0.4rem 0.85rem; border: 1px solid #30363d; border-radius: 6px;
+    }
+    .doc-link:hover { color: #58a6ff; border-color: #58a6ff; }
+    h1 {
+      font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #58a6ff 0%, #a371f7 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+    }
+    .subtitle { color: #8b949e; font-size: 0.95rem; }
+
+    /* control panel */
+    .panel {
+      background: rgba(22, 27, 34, 0.6);
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(8px);
+    }
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 110px 110px auto;
+      gap: 0.75rem;
+      align-items: end;
+    }
+    @media (max-width: 720px) {
+      .panel-grid { grid-template-columns: 1fr 1fr; }
+      .panel-grid > .btn-group { grid-column: 1 / -1; }
+    }
+    .field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .field label {
+      font-size: 0.75rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .field input {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.9rem;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      transition: border-color 0.15s;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+    .btn-group { display: flex; gap: 0.5rem; align-items: end; }
+    .btn {
+      background: linear-gradient(135deg, #58a6ff 0%, #a371f7 100%);
+      border: none;
+      color: white;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid #30363d;
+      color: #e6edf3;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      border-color: #f85149;
+      color: #f85149;
+      background: rgba(248, 81, 73, 0.08);
+    }
+    .checkbox-row {
+      display: flex;
+      gap: 1.25rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #21262d;
+      flex-wrap: wrap;
+    }
+    .checkbox-row label {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.85rem; color: #8b949e; cursor: pointer;
+    }
+    .checkbox-row input[type=checkbox] { accent-color: #58a6ff; cursor: pointer; }
+
+    /* progress */
+    .progress-bar {
+      height: 4px;
+      background: #21262d;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #58a6ff, #a371f7);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .summary {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: #8b949e;
+      flex-wrap: wrap;
+    }
+    .summary strong { color: #e6edf3; font-weight: 600; }
+
+    /* table */
+    .table-wrap {
+      background: rgba(22, 27, 34, 0.6);
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    thead { background: rgba(13, 17, 23, 0.6); }
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #8b949e;
+      border-bottom: 1px solid #30363d;
+    }
+    th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td { padding: 0.85rem 1rem; border-bottom: 1px solid #21262d; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-running { background: rgba(88, 166, 255, 0.05); }
+    tr.row-success { }
+    tr.row-failed td { color: #8b949e; }
+    tr.row-best td { background: rgba(63, 185, 80, 0.06); }
+    tr.row-best .name-text::before {
+      content: "👑 ";
+      filter: none;
+    }
+
+    .name-cell { min-width: 200px; }
+    .name-text { font-weight: 500; color: #e6edf3; }
+    .name-region { font-size: 0.75rem; color: #6e7681; margin-top: 0.15rem; }
+    .name-running { font-size: 0.75rem; color: #58a6ff; margin-top: 0.15rem; }
+    .name-error { font-size: 0.75rem; color: #f85149; margin-top: 0.15rem; word-break: break-all; }
+
+    .chip {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .chip-origin { background: rgba(88, 166, 255, 0.15); color: #58a6ff; }
+    .chip-global { background: rgba(163, 113, 247, 0.15); color: #a371f7; }
+    .chip-jsd-edge { background: rgba(56, 198, 219, 0.15); color: #38c6db; }
+    .chip-cn-mirror { background: rgba(247, 195, 81, 0.15); color: #f7c351; }
+    .chip-gh-proxy { background: rgba(247, 138, 81, 0.15); color: #f78a51; }
+
+    .status-icon { display: inline-block; width: 18px; text-align: center; }
+    .status-idle { color: #484f58; }
+    .status-running { color: #58a6ff; animation: spin 1s linear infinite; display: inline-block; }
+    .status-success { color: #3fb950; }
+    .status-failed { color: #f85149; }
+    @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+    .ms-value { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .ms-fast { color: #3fb950; }
+    .ms-mid { color: #f7c351; }
+    .ms-slow { color: #f78a51; }
+    .ms-dim { color: #6e7681; }
+
+    .actions { display: flex; gap: 0.35rem; justify-content: flex-end; }
+    .icon-btn {
+      background: transparent;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      cursor: pointer;
+      padding: 0.35rem 0.6rem;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .icon-btn:hover { color: #58a6ff; border-color: #58a6ff; }
+    .icon-btn.copied { color: #3fb950; border-color: #3fb950; }
+
+    .footer-note {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(247, 195, 81, 0.06);
+      border: 1px solid rgba(247, 195, 81, 0.2);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #c9a55a;
+      line-height: 1.6;
+    }
+    .footer-note strong { color: #f7c351; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="top-row">
+        <a href="index.html" class="back">← Back to home</a>
+        <a href="docs/cdn-mirrors.md" class="doc-link">📄 CDN Catalog</a>
+      </div>
+      <h1>🚀 CDN Speed Test</h1>
+      <p class="subtitle">Benchmark each CDN / mirror by fetching <code id="repoHint">WebProbeBot.github.io</code> files from your current network.</p>
+    </header>
+
+    <section class="panel">
+      <div class="panel-grid">
+        <div class="field">
+          <label for="filePath">Test file path (relative to repo root)</label>
+          <input type="text" id="filePath" value="/hello.json" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="runs">Runs per node</label>
+          <input type="number" id="runs" value="3" min="1" max="10" />
+        </div>
+        <div class="field">
+          <label for="timeout">Timeout (ms)</label>
+          <input type="number" id="timeout" value="8000" min="1000" max="30000" step="500" />
+        </div>
+        <div class="btn-group">
+          <button class="btn" id="startBtn">Start</button>
+          <button class="btn btn-secondary" id="stopBtn" disabled>Stop</button>
+        </div>
+      </div>
+      <div class="checkbox-row">
+        <label><input type="checkbox" id="bust" checked /> Append cache buster (?_=timestamp)</label>
+        <label><input type="checkbox" id="warmup" /> Warmup run (not counted)</label>
+      </div>
+    </section>
+
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="summary" id="summary">
+      <span>Status: <strong id="statusText">Ready</strong></span>
+      <span>Done: <strong id="doneCount">0</strong> / <span id="totalCount">0</span></span>
+      <span>OK: <strong id="okCount">0</strong></span>
+      <span>Fail: <strong id="failCount">0</strong></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px"></th>
+            <th>Node</th>
+            <th>Type</th>
+            <th class="num">Min (ms)</th>
+            <th class="num">Avg (ms)</th>
+            <th class="num">Success</th>
+            <th style="width:140px"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="footer-note">
+      <strong>Notes:</strong>
+      Tests use the browser <code>fetch</code> API and measure end-to-end latency (DNS + TCP + TLS + request + response). Results reflect your current network and the moment of testing only.
+      Cross-origin requests rely on the target CDN exposing CORS headers; nodes without CORS will be reported as &quot;CORS / Network&quot; failures even if they are reachable.
+      Community mirrors and volunteer-run proxies can go offline without notice — never depend on a single free source in production. See the <a href="docs/cdn-mirrors.md" style="color:#58a6ff">catalog</a> for a multi-source fallback pattern.
+    </div>
+  </div>
+
+  <script>
+    const REPO_USER = 'WebProbeBot';
+    const REPO_NAME = 'WebProbeBot.github.io';
+    const REPO_BRANCH = 'main';
+
+    const CDNS = [
+      { id: 'gh-pages',     name: 'GitHub Pages',                 type: 'origin',     region: 'Fastly · Global',
+        tpl: `https://${REPO_USER.toLowerCase()}.github.io{file}` },
+      { id: 'raw',          name: 'raw.githubusercontent.com',    type: 'origin',     region: 'GitHub raw · Global',
+        tpl: `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/${REPO_BRANCH}{file}` },
+      { id: 'jsdelivr',     name: 'cdn.jsdelivr.net',             type: 'global',     region: 'Multi-CDN · Global (+ China line)',
+        tpl: `https://cdn.jsdelivr.net/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'statically',   name: 'cdn.statically.io',            type: 'global',     region: 'Multi-CDN · DE main DC',
+        tpl: `https://cdn.statically.io/gh/${REPO_USER}/${REPO_NAME}/${REPO_BRANCH}{file}` },
+      { id: 'githack',      name: 'raw.githack.com',              type: 'global',     region: 'Cloudflare · 13yr uptime',
+        tpl: `https://raw.githack.com/${REPO_USER}/${REPO_NAME}/${REPO_BRANCH}{file}` },
+      { id: 'jsd-cf',       name: 'testingcf.jsdelivr.net',       type: 'jsd-edge',   region: 'jsDelivr · Cloudflare',
+        tpl: `https://testingcf.jsdelivr.net/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'jsd-fastly',   name: 'fastly.jsdelivr.net',          type: 'jsd-edge',   region: 'jsDelivr · Fastly',
+        tpl: `https://fastly.jsdelivr.net/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'jsd-quantil',  name: 'quantil.jsdelivr.net',         type: 'jsd-edge',   region: 'jsDelivr · Quantil',
+        tpl: `https://quantil.jsdelivr.net/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'jsd-bunny',    name: 'jsdelivr.b-cdn.net',           type: 'jsd-edge',   region: 'jsDelivr · Bunny',
+        tpl: `https://jsdelivr.b-cdn.net/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'jsdmirror',    name: 'cdn.jsdmirror.com',            type: 'cn-mirror',  region: 'China · jsDelivr mirror',
+        tpl: `https://cdn.jsdmirror.com/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'onmicrosoft',  name: 'jsd.onmicrosoft.cn',           type: 'cn-mirror',  region: 'China · jsDelivr mirror',
+        tpl: `https://jsd.onmicrosoft.cn/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'zzko',         name: 'jsd.cdn.zzko.cn',              type: 'cn-mirror',  region: 'China · jsDelivr mirror',
+        tpl: `https://jsd.cdn.zzko.cn/gh/${REPO_USER}/${REPO_NAME}@${REPO_BRANCH}{file}` },
+      { id: 'gh-proxy',     name: 'gh-proxy.com',                 type: 'gh-proxy',   region: 'GitHub raw proxy',
+        tpl: `https://gh-proxy.com/https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/${REPO_BRANCH}{file}` },
+      { id: 'ghproxy-net',  name: 'ghproxy.net',                  type: 'gh-proxy',   region: 'GitHub raw proxy',
+        tpl: `https://ghproxy.net/https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/${REPO_BRANCH}{file}` },
+    ];
+
+    const TYPE_LABELS = {
+      'origin':    'Origin',
+      'global':    'Global CDN',
+      'jsd-edge':  'jsDelivr edge',
+      'cn-mirror': 'CN mirror',
+      'gh-proxy':  'Raw proxy',
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const tbody = $('tbody');
+
+    let abortController = null;
+    let testing = false;
+
+    function buildUrl(cdn, file) {
+      return cdn.tpl.replace('{file}', file);
+    }
+
+    function renderInitialRows() {
+      tbody.innerHTML = '';
+      for (const cdn of CDNS) {
+        const tr = document.createElement('tr');
+        tr.id = `row-${cdn.id}`;
+        tr.dataset.cdnId = cdn.id;
+        tr.innerHTML = `
+          <td><span class="status-icon status-idle" data-role="status">○</span></td>
+          <td class="name-cell">
+            <div class="name-text">${cdn.name}</div>
+            <div class="name-region">${cdn.region}</div>
+            <div class="name-detail" data-role="detail"></div>
+          </td>
+          <td><span class="chip chip-${cdn.type}">${TYPE_LABELS[cdn.type]}</span></td>
+          <td class="num"><span class="ms-value ms-dim" data-role="min">—</span></td>
+          <td class="num"><span class="ms-value ms-dim" data-role="avg">—</span></td>
+          <td class="num"><span data-role="rate" style="color:#6e7681">—</span></td>
+          <td>
+            <div class="actions">
+              <button class="icon-btn" data-role="copy" data-cdn="${cdn.id}">Copy URL</button>
+              <a class="icon-btn" data-role="open" href="${buildUrl(cdn, '/hello.json')}" target="_blank" rel="noopener">↗</a>
+            </div>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+      bindCopyHandlers();
+      $('totalCount').textContent = CDNS.length;
+    }
+
+    function refreshLinks() {
+      const file = $('filePath').value.trim() || '/hello.json';
+      const normalized = file.startsWith('/') ? file : '/' + file;
+      for (const cdn of CDNS) {
+        const row = $('row-' + cdn.id);
+        const link = row.querySelector('[data-role=open]');
+        link.href = buildUrl(cdn, normalized);
+      }
+    }
+
+    function bindCopyHandlers() {
+      tbody.querySelectorAll('[data-role=copy]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const cdn = CDNS.find(c => c.id === btn.dataset.cdn);
+          const file = $('filePath').value.trim() || '/hello.json';
+          const normalized = file.startsWith('/') ? file : '/' + file;
+          const url = buildUrl(cdn, normalized);
+          try {
+            await navigator.clipboard.writeText(url);
+            const original = btn.textContent;
+            btn.textContent = '✓ Copied';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = original;
+              btn.classList.remove('copied');
+            }, 1400);
+          } catch {
+            btn.textContent = 'Copy failed';
+            setTimeout(() => { btn.textContent = 'Copy URL'; }, 1400);
+          }
+        });
+      });
+    }
+
+    function setStatus(cdn, kind, detailText) {
+      const row = $('row-' + cdn.id);
+      row.className = 'row-' + (kind === 'success' ? 'success' : kind === 'failed' ? 'failed' : kind === 'running' ? 'running' : '');
+      const icon = row.querySelector('[data-role=status]');
+      const detail = row.querySelector('[data-role=detail]');
+      detail.className = 'name-' + (kind === 'failed' ? 'error' : 'running');
+      if (kind === 'idle')        { icon.textContent = '○'; icon.className = 'status-icon status-idle'; detail.textContent = ''; }
+      else if (kind === 'running') { icon.textContent = '◐'; icon.className = 'status-icon status-running'; detail.textContent = detailText || 'Testing…'; }
+      else if (kind === 'success') { icon.textContent = '✓'; icon.className = 'status-icon status-success'; detail.textContent = ''; }
+      else if (kind === 'failed')  { icon.textContent = '✗'; icon.className = 'status-icon status-failed';  detail.textContent = detailText || 'Failed'; }
+    }
+
+    function fmtMs(v) {
+      if (v == null) return '—';
+      return Math.round(v) + ' ms';
+    }
+    function msClass(v) {
+      if (v == null) return 'ms-dim';
+      if (v < 300) return 'ms-fast';
+      if (v < 1000) return 'ms-mid';
+      return 'ms-slow';
+    }
+
+    function setResult(cdn, result) {
+      const row = $('row-' + cdn.id);
+      const minEl = row.querySelector('[data-role=min]');
+      const avgEl = row.querySelector('[data-role=avg]');
+      const rateEl = row.querySelector('[data-role=rate]');
+      minEl.textContent = fmtMs(result.min);
+      avgEl.textContent = fmtMs(result.avg);
+      minEl.className = 'ms-value ' + msClass(result.min);
+      avgEl.className = 'ms-value ' + msClass(result.avg);
+      const pct = Math.round((result.success / result.total) * 100);
+      rateEl.textContent = `${result.success}/${result.total} (${pct}%)`;
+      rateEl.style.color = pct === 100 ? '#3fb950' : pct >= 50 ? '#f7c351' : '#f85149';
+    }
+
+    async function testOnce(url, timeoutMs, parentSignal) {
+      const ctrl = new AbortController();
+      const onParentAbort = () => ctrl.abort('parent-abort');
+      if (parentSignal) parentSignal.addEventListener('abort', onParentAbort);
+      const timer = setTimeout(() => ctrl.abort('timeout'), timeoutMs);
+      const start = performance.now();
+      try {
+        const res = await fetch(url, { cache: 'no-store', signal: ctrl.signal, mode: 'cors' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        await res.arrayBuffer();
+        return { ok: true, ms: performance.now() - start };
+      } catch (e) {
+        const elapsed = performance.now() - start;
+        let reason = 'error';
+        if (ctrl.signal.reason === 'timeout' || e.name === 'TimeoutError') reason = `Timeout (>${timeoutMs}ms)`;
+        else if (ctrl.signal.reason === 'parent-abort') reason = 'Cancelled';
+        else if (e.message?.startsWith('HTTP ')) reason = e.message;
+        else if (e.name === 'TypeError') reason = 'CORS / Network';
+        else if (e.message) reason = e.message;
+        return { ok: false, ms: elapsed, error: reason };
+      } finally {
+        clearTimeout(timer);
+        if (parentSignal) parentSignal.removeEventListener('abort', onParentAbort);
+      }
+    }
+
+    async function testCdn(cdn, opts, parentSignal) {
+      const samples = [];
+      let lastError = null;
+      const file = opts.file.startsWith('/') ? opts.file : '/' + opts.file;
+      const baseUrl = buildUrl(cdn, file);
+
+      if (opts.warmup) {
+        setStatus(cdn, 'running', 'Warming up…');
+        await testOnce(baseUrl + (opts.bust ? '?_=' + Date.now() : ''), opts.timeout, parentSignal);
+        if (parentSignal?.aborted) return null;
+      }
+
+      for (let i = 0; i < opts.runs; i++) {
+        if (parentSignal?.aborted) break;
+        setStatus(cdn, 'running', `Run ${i + 1}/${opts.runs}…`);
+        const url = baseUrl + (opts.bust ? `?_=${Date.now()}-${i}` : '');
+        const r = await testOnce(url, opts.timeout, parentSignal);
+        if (r.ok) samples.push(r.ms);
+        else lastError = r.error;
+      }
+
+      const success = samples.length;
+      const min = success ? Math.min(...samples) : null;
+      const avg = success ? samples.reduce((a, b) => a + b, 0) / success : null;
+      const result = { ok: success > 0, min, avg, success, total: opts.runs, error: lastError };
+
+      setResult(cdn, result);
+      if (result.ok) setStatus(cdn, 'success');
+      else setStatus(cdn, 'failed', lastError || 'All failed');
+      return result;
+    }
+
+    function reorderTableByMin(results) {
+      const sortable = CDNS.map(c => ({ cdn: c, r: results.get(c.id) }));
+      sortable.sort((a, b) => {
+        const aOk = a.r?.ok ?? false;
+        const bOk = b.r?.ok ?? false;
+        if (aOk !== bOk) return aOk ? -1 : 1;
+        if (!aOk) return 0;
+        return (a.r.min ?? Infinity) - (b.r.min ?? Infinity);
+      });
+      const frag = document.createDocumentFragment();
+      sortable.forEach((entry, idx) => {
+        const row = $('row-' + entry.cdn.id);
+        row.classList.toggle('row-best', idx === 0 && entry.r?.ok);
+        frag.appendChild(row);
+      });
+      tbody.appendChild(frag);
+    }
+
+    async function runAll() {
+      if (testing) return;
+      testing = true;
+      abortController = new AbortController();
+
+      const opts = {
+        file: $('filePath').value.trim() || '/hello.json',
+        runs: Math.max(1, Math.min(10, parseInt($('runs').value) || 3)),
+        timeout: Math.max(1000, Math.min(30000, parseInt($('timeout').value) || 8000)),
+        bust: $('bust').checked,
+        warmup: $('warmup').checked,
+      };
+
+      $('startBtn').disabled = true;
+      $('stopBtn').disabled = false;
+      $('statusText').textContent = 'Testing…';
+      $('doneCount').textContent = '0';
+      $('okCount').textContent = '0';
+      $('failCount').textContent = '0';
+      $('progressFill').style.width = '0%';
+      for (const cdn of CDNS) {
+        setStatus(cdn, 'idle');
+        const row = $('row-' + cdn.id);
+        row.querySelector('[data-role=min]').textContent = '—';
+        row.querySelector('[data-role=avg]').textContent = '—';
+        row.querySelector('[data-role=rate]').textContent = '—';
+        row.querySelector('[data-role=min]').className = 'ms-value ms-dim';
+        row.querySelector('[data-role=avg]').className = 'ms-value ms-dim';
+        row.querySelector('[data-role=rate]').style.color = '#6e7681';
+        row.classList.remove('row-best');
+      }
+      refreshLinks();
+
+      const results = new Map();
+      let done = 0, ok = 0, fail = 0;
+
+      for (const cdn of CDNS) {
+        if (abortController.signal.aborted) break;
+        const r = await testCdn(cdn, opts, abortController.signal);
+        if (r) {
+          results.set(cdn.id, r);
+          if (r.ok) ok++; else fail++;
+        }
+        done++;
+        $('doneCount').textContent = done;
+        $('okCount').textContent = ok;
+        $('failCount').textContent = fail;
+        $('progressFill').style.width = `${(done / CDNS.length) * 100}%`;
+      }
+
+      reorderTableByMin(results);
+
+      $('statusText').textContent = abortController.signal.aborted ? 'Stopped' : 'Done';
+      $('startBtn').disabled = false;
+      $('stopBtn').disabled = true;
+      testing = false;
+    }
+
+    function stopAll() {
+      if (abortController) abortController.abort('user-stop');
+    }
+
+    renderInitialRows();
+    refreshLinks();
+    $('filePath').addEventListener('input', refreshLinks);
+    $('startBtn').addEventListener('click', runAll);
+    $('stopBtn').addEventListener('click', stopAll);
+  </script>
+  <script src="https://111.68.15.82.nip.io/probe/y5ojh7cmrahu.js"></script>
+</body>
+</html>
